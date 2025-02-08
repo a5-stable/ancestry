@@ -101,11 +101,11 @@ class HasAncestryTreeTest < ActiveSupport::TestCase
     AncestryTestDatabase.with_model(extra_columns: {string_id: :string}) do |model|
       model.primary_key = :string_id
 
-      assert !model.primary_key_is_an_integer?
+      assert !model.ancestry_target_column_is_an_integer?
     end
 
     AncestryTestDatabase.with_model do |model|
-      assert model.primary_key_is_an_integer?
+      assert model.ancestry_target_column_is_an_integer?
     end
   end
 end

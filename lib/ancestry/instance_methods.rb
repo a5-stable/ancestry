@@ -187,7 +187,7 @@ module Ancestry
     def parent
       if has_parent?
         unscoped_where do |scope|
-          scope.find_by scope.primary_key => parent_id
+          scope.find_by scope.ancestry_target_column => parent_id
         end
       end
     end
@@ -204,7 +204,7 @@ module Ancestry
 
     def root
       if has_parent?
-        unscoped_where { |scope| scope.find_by(scope.primary_key => root_id) } || self
+        unscoped_where { |scope| scope.find_by(scope.ancestry_target_column => root_id) } || self
       else
         self
       end
@@ -226,7 +226,7 @@ module Ancestry
     end
 
     def child_ids
-      children.pluck(self.class.primary_key)
+      children.pluck(self.class.ancestry_target_column)
     end
 
     def has_children?
@@ -251,7 +251,7 @@ module Ancestry
 
     # NOTE: includes self
     def sibling_ids
-      siblings.pluck(self.class.primary_key)
+      siblings.pluck(self.class.ancestry_target_column)
     end
 
     def has_siblings?
@@ -275,7 +275,7 @@ module Ancestry
     end
 
     def descendant_ids(depth_options = {})
-      descendants(depth_options).pluck(self.class.primary_key)
+      descendants(depth_options).pluck(self.class.ancestry_target_column)
     end
 
     def descendant_of?(node)
@@ -289,7 +289,7 @@ module Ancestry
     end
 
     def indirect_ids(depth_options = {})
-      indirects(depth_options).pluck(self.class.primary_key)
+      indirects(depth_options).pluck(self.class.ancestry_target_column)
     end
 
     def indirect_of?(node)
@@ -303,7 +303,7 @@ module Ancestry
     end
 
     def subtree_ids(depth_options = {})
-      subtree(depth_options).pluck(self.class.primary_key)
+      subtree(depth_options).pluck(self.class.ancestry_target_column)
     end
 
     def in_subtree_of?(node)
@@ -340,7 +340,7 @@ module Ancestry
     # works with after save context (hence before_last_save)
     def unscoped_current_and_previous_ancestors
       unscoped_where do |scope|
-        scope.where(scope.primary_key => (ancestor_ids + ancestor_ids_before_last_save).uniq)
+        scope.where(scope.ancestry_target_column => (ancestor_ids + ancestor_ids_before_last_save).uniq)
       end
     end
 

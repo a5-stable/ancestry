@@ -8,7 +8,7 @@ module Ancestry
         raise Ancestry::AncestryException, I18n.t("ancestry.option_must_be_hash")
       end
 
-      extra_keys = options.keys - [:ancestry_column, :orphan_strategy, :cache_depth, :depth_cache_column, :touch, :counter_cache, :primary_key_format, :update_strategy, :ancestry_format]
+      extra_keys = options.keys - [:ancestry_target_column, :ancestry_column, :orphan_strategy, :cache_depth, :depth_cache_column, :touch, :counter_cache, :primary_key_format, :update_strategy, :ancestry_format]
       if (key = extra_keys.first)
         raise Ancestry::AncestryException, I18n.t("ancestry.unknown_option", key: key.inspect, value: options[key].inspect)
       end
@@ -19,6 +19,9 @@ module Ancestry
       end
 
       orphan_strategy = options[:orphan_strategy] || :destroy
+
+      class_variable_set('@@ancestry_target_column_key', options[:ancestry_target_column_key])
+      cattr_reader :ancestry_target_column_key, instance_reader: false
 
       # Create ancestry column accessor and set to option or default
       class_variable_set('@@ancestry_column', options[:ancestry_column] || :ancestry)

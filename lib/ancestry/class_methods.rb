@@ -7,7 +7,7 @@ module Ancestry
       if object.is_a?(ancestry_base_class)
         object
       else
-        unscoped_where { |scope| scope.find(object.try(primary_key) || object) }
+        unscoped_where { |scope| scope.find(object.try(ancestry_target_column) || object) }
       end
     end
 
@@ -233,11 +233,11 @@ module Ancestry
         connection.execute %{
           UPDATE #{table_name} AS dest
           LEFT JOIN (
-            SELECT #{table_name}.#{primary_key}, COUNT(*) AS child_count
+            SELECT #{table_name}.#{ancestry_target_column}, COUNT(*) AS child_count
             FROM #{table_name}
             JOIN #{table_name} children ON children.#{ancestry_column} = (#{child_ancestry_sql})
-            GROUP BY #{table_name}.#{primary_key}
-          ) src USING(#{primary_key})
+            GROUP BY #{table_name}.#{ancestry_target_column}
+          ) src USING(#{ancestry_target_column})
           SET dest.#{counter_cache_column} = COALESCE(src.child_count, 0)
         }
       else
@@ -256,12 +256,16 @@ module Ancestry
     end
 
     ANCESTRY_UNCAST_TYPES = [:string, :uuid, :text].freeze
-    def primary_key_is_an_integer?
-      if defined?(@primary_key_is_an_integer)
-        @primary_key_is_an_integer
+    def ancestry_target_column_is_an_integer?
+      if defined?(@ancestry_target_column_is_an_integer)
+        @ancestry_target_column_is_an_integer
       else
-        @primary_key_is_an_integer = !ANCESTRY_UNCAST_TYPES.include?(type_for_attribute(primary_key).type)
+        @ancestry_target_column_is_an_integer = !ANCESTRY_UNCAST_TYPES.include?(type_for_attribute(ancestry_target_column).type)
       end
+    end
+
+    def ancestry_target_column
+      ancestry_target_column_key || primary_key
     end
   end
 end

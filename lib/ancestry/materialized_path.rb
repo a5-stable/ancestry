@@ -20,19 +20,19 @@ module Ancestry
     def ancestors_of(object)
       t = arel_table
       node = to_node(object)
-      where(t[primary_key].in(node.ancestor_ids))
+      where(t[ancestry_target_column].in(node.ancestor_ids))
     end
 
     def inpath_of(object)
       t = arel_table
       node = to_node(object)
-      where(t[primary_key].in(node.path_ids))
+      where(t[ancestry_target_column].in(node.path_ids))
     end
 
     def children_of(object)
       t = arel_table
       node = to_node(object)
-      where(t[ancestry_column].eq(node.child_ancestry))
+      where(t[ancestry_target_column].eq(node.child_ancestry))
     end
 
     # indirect = anyone who is a descendant, but not a child
@@ -64,7 +64,7 @@ module Ancestry
     def subtree_of(object)
       t = arel_table
       node = to_node(object)
-      descendants_of(node).or(where(t[primary_key].eq(node.id)))
+      descendants_of(node).or(where(t[ancestry_target_column].eq(node.id)))
     end
 
     def siblings_of(object)
@@ -96,8 +96,8 @@ module Ancestry
 
     def child_ancestry_sql
       %{
-        CASE WHEN #{table_name}.#{ancestry_column} IS NULL THEN #{concat("#{table_name}.#{primary_key}")}
-        ELSE      #{concat("#{table_name}.#{ancestry_column}", "'#{ancestry_delimiter}'", "#{table_name}.#{primary_key}")}
+        CASE WHEN #{table_name}.#{ancestry_column} IS NULL THEN #{concat("#{table_name}.#{ancestry_target_column}")}
+        ELSE      #{concat("#{table_name}.#{ancestry_column}", "'#{ancestry_delimiter}'", "#{table_name}.#{ancestry_target_column}")}
         END
       }
     end
@@ -118,7 +118,7 @@ module Ancestry
       return [] if obj.nil? || obj == ancestry_root
 
       obj_ids = obj.split(ancestry_delimiter).delete_if(&:blank?)
-      primary_key_is_an_integer? ? obj_ids.map!(&:to_i) : obj_ids
+      ancestry_target_column_is_an_integer? ? obj_ids.map!(&:to_i) : obj_ids
     end
 
     def ancestry_depth_change(old_value, new_value)
