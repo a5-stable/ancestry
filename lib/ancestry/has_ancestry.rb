@@ -8,7 +8,7 @@ module Ancestry
         raise Ancestry::AncestryException, I18n.t("ancestry.option_must_be_hash")
       end
 
-      extra_keys = options.keys - [:ancestry_target_column, :ancestry_column, :orphan_strategy, :cache_depth, :depth_cache_column, :touch, :counter_cache, :primary_key_format, :update_strategy, :ancestry_format]
+      extra_keys = options.keys - [:ancestry_target_column, :ancestry_column, :orphan_strategy, :cache_depth, :depth_cache_column, :touch, :counter_cache, :primary_key_format, :update_strategy, :ancestry_format, :ancestry_target_column_key, :ancestry_target_column_key_format]
       if (key = extra_keys.first)
         raise Ancestry::AncestryException, I18n.t("ancestry.unknown_option", key: key.inspect, value: options[key].inspect)
       end
@@ -28,6 +28,15 @@ module Ancestry
       cattr_reader :ancestry_column, instance_reader: false
 
       primary_key_format = options[:primary_key_format].presence || Ancestry.default_primary_key_format
+      ancestry_target_column_key_format = options[:ancestry_target_column_key_format].presence || Ancestry.default_ancestry_target_column_format
+
+      if ancestry_target_column_key.present? && options[:primary_key_format].present?
+        warn "has_ancestry :primary_key_format is ignored when :ancestry_target_column is set"
+      end
+
+      if ancestry_target_column_key.nil? && options[:ancestry_target_column_key_format].present?
+        warn "has_ancestry :ancestry_target_column_key_format is ignored when :ancestry_target_column is not set"
+      end
 
       class_variable_set('@@ancestry_delimiter', '/')
       cattr_reader :ancestry_delimiter, instance_reader: false
@@ -50,7 +59,11 @@ module Ancestry
 
       attribute ancestry_column, default: ancestry_root
 
-      validates ancestry_column, ancestry_validation_options(primary_key_format)
+      if ancestry_target_column_key.nil?
+        validates ancestry_column, ancestry_validation_options(primary_key_format)
+      else
+        validates ancestry_column, ancestry_validation_options(ancestry_target_column_key_format)
+      end
 
       update_strategy = options[:update_strategy] || Ancestry.default_update_strategy
       include Ancestry::MaterializedPathPg if update_strategy == :sql

@@ -16,6 +16,7 @@ module Ancestry
   @@default_update_strategy = :ruby
   @@default_ancestry_format = :materialized_path
   @@default_primary_key_format = '[0-9]+'
+  @@default_ancestry_target_column_key_format = '[0-9]+'
 
   # @!default_update_strategy
   #   @return [Symbol] the default strategy for updating ancestry
@@ -57,6 +58,14 @@ module Ancestry
 
   def self.default_ancestry_format=(value)
     @@default_ancestry_format = value
+  end
+
+  def self.default_ancestry_target_column_format
+    @@default_ancestry_target_column_key_format
+  end
+
+  def self.default_ancestry_target_column_format=(value)
+    @@default_ancestry_target_column_key_format = value
   end
 
   # @!default_primary_key_format

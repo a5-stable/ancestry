@@ -32,7 +32,7 @@ module Ancestry
     def children_of(object)
       t = arel_table
       node = to_node(object)
-      where(t[ancestry_target_column].eq(node.child_ancestry))
+      where(t[ancestry_column].eq(node.child_ancestry))
     end
 
     # indirect = anyone who is a descendant, but not a child
@@ -200,7 +200,7 @@ module Ancestry
       def child_ancestry
         raise(Ancestry::AncestryException, I18n.t("ancestry.no_child_for_new_record")) if new_record?
 
-        [attribute_in_database(self.class.ancestry_column), id].compact.join(self.class.ancestry_delimiter)
+        [attribute_in_database(self.class.ancestry_column), read_attribute(self.class.ancestry_target_column)].compact.join(self.class.ancestry_delimiter)
       end
 
       # The ancestry value for this record's old children
@@ -212,7 +212,7 @@ module Ancestry
           raise Ancestry::AncestryException, I18n.t("ancestry.no_child_for_new_record")
         end
 
-        [attribute_before_last_save(self.class.ancestry_column), id].compact.join(self.class.ancestry_delimiter)
+        [attribute_before_last_save(self.class.ancestry_column), read_attribute(self.class.ancestry_target_column)].compact.join(self.class.ancestry_delimiter)
       end
     end
   end
