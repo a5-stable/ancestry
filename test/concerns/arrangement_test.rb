@@ -4,15 +4,15 @@ require_relative '../environment'
 
 class ArrangementTest < ActiveSupport::TestCase
   def root_node(model)
-    model.order(:id).first
+    model.order(model.ancestry_target_column).first
   end
 
   def middle_node(model)
-    root_node(model).children.min_by(&:id)
+    root_node(model).children.min_by(&model.ancestry_target_column.to_sym)
   end
 
   def leaf_node(model)
-    model.order("id DESC").first
+    model.order("#{model.ancestry_target_column} DESC").first
   end
 
   # Walk the tree of arranged nodes and measure the number of children and
@@ -23,7 +23,7 @@ class ArrangementTest < ActiveSupport::TestCase
     assert_equal size_at_depth[0], arranged_nodes.size
     arranged_nodes.each do |node, children|
       assert_equal size_at_depth[1], children.size
-      assert_equal node.children.sort_by(&:id), children.keys.sort_by(&:id)
+      assert_equal node.children.sort_by(&node.class.ancestry_target_column.to_sym), children.keys.sort_by(&node.class.ancestry_target_column.to_sym)
 
       assert_tree(children, size_at_depth[1..])
     end
