@@ -4,7 +4,7 @@ module Ancestry
   module InstanceMethods
     # Validate that the ancestors don't include itself
     def ancestry_exclude_self
-      errors.add(:base, I18n.t("ancestry.exclude_self", class_name: self.class.name.humanize)) if ancestor_ids.include?(id)
+      errors.add(:base, I18n.t("ancestry.exclude_self", class_name: self.class.name.humanize)) if ancestor_ids.include?(ancestry_target_column_key)
     end
 
     # Update descendants with new ancestry (after update)
@@ -51,7 +51,7 @@ module Ancestry
 
       descendants.each do |descendant|
         descendant.without_ancestry_callbacks do
-          descendant.update_attribute :ancestor_ids, (descendant.ancestor_ids.delete_if { |x| x == id })
+          descendant.update_attribute :ancestor_ids, (descendant.ancestor_ids.delete_if { |x| x == ancestry_target_column_key })
         end
       end
     end
@@ -140,15 +140,15 @@ module Ancestry
     end
 
     def path_ids
-      ancestor_ids + [id]
+      ancestor_ids + [ancestry_target_column_key]
     end
 
     def path_ids_before_last_save
-      ancestor_ids_before_last_save + [id]
+      ancestor_ids_before_last_save + [ancestry_target_column_key]
     end
 
     def path_ids_in_database
-      ancestor_ids_in_database + [id]
+      ancestor_ids_in_database + [ancestry_target_column_key]
     end
 
     def path(depth_options = {})
@@ -164,7 +164,7 @@ module Ancestry
     end
 
     def ancestor_of?(node)
-      node.ancestor_ids.include?(id)
+      node.ancestor_ids.include?(ancestry_target_column_key)
     end
 
     # Parent
@@ -187,24 +187,24 @@ module Ancestry
     def parent
       if has_parent?
         unscoped_where do |scope|
-          scope.find_by scope.primary_key => parent_id
+          scope.find_by scope.ancestry_target_column => parent_id
         end
       end
     end
 
     def parent_of?(node)
-      id == node.parent_id
+      ancestry_target_column_key == node.parent_id
     end
 
     # Root
 
     def root_id
-      has_parent? ? ancestor_ids.first : id
+      has_parent? ? ancestor_ids.first : ancestry_target_column_key
     end
 
     def root
       if has_parent?
-        unscoped_where { |scope| scope.find_by(scope.primary_key => root_id) } || self
+        unscoped_where { |scope| scope.find_by(scope.ancestry_target_column => root_id) } || self
       else
         self
       end
@@ -216,7 +216,7 @@ module Ancestry
     alias root? is_root?
 
     def root_of?(node)
-      id == node.root_id
+      ancestry_target_column_key == node.root_id
     end
 
     # Children
@@ -226,7 +226,7 @@ module Ancestry
     end
 
     def child_ids
-      children.pluck(self.class.primary_key)
+      children.pluck(self.class.ancestry_target_column)
     end
 
     def has_children?
@@ -240,7 +240,7 @@ module Ancestry
     alias_method :childless?, :is_childless?
 
     def child_of?(node)
-      parent_id == node.id
+      parent_id == node.ancestry_target_column_key
     end
 
     # Siblings
@@ -251,7 +251,7 @@ module Ancestry
 
     # NOTE: includes self
     def sibling_ids
-      siblings.pluck(self.class.primary_key)
+      siblings.pluck(self.class.ancestry_target_column)
     end
 
     def has_siblings?
@@ -275,11 +275,11 @@ module Ancestry
     end
 
     def descendant_ids(depth_options = {})
-      descendants(depth_options).pluck(self.class.primary_key)
+      descendants(depth_options).pluck(self.class.ancestry_target_column)
     end
 
     def descendant_of?(node)
-      ancestor_ids.include?(node.id)
+      ancestor_ids.include?(node.ancestry_target_column_key)
     end
 
     # Indirects
@@ -289,11 +289,11 @@ module Ancestry
     end
 
     def indirect_ids(depth_options = {})
-      indirects(depth_options).pluck(self.class.primary_key)
+      indirects(depth_options).pluck(self.class.ancestry_target_column)
     end
 
     def indirect_of?(node)
-      ancestor_ids[0..-2].include?(node.id)
+      ancestor_ids[0..-2].include?(node.ancestry_target_column_key)
     end
 
     # Subtree
@@ -303,11 +303,11 @@ module Ancestry
     end
 
     def subtree_ids(depth_options = {})
-      subtree(depth_options).pluck(self.class.primary_key)
+      subtree(depth_options).pluck(self.class.ancestry_target_column)
     end
 
     def in_subtree_of?(node)
-      id == node.id || descendant_of?(node)
+      ancestry_target_column_key == node.ancestry_target_column_key || descendant_of?(node)
     end
 
     # Callback disabling
@@ -321,6 +321,10 @@ module Ancestry
 
     def ancestry_callbacks_disabled?
       defined?(@disable_ancestry_callbacks) && @disable_ancestry_callbacks
+    end
+
+    def ancestry_target_column_key
+      read_attribute(self.class.ancestry_target_column)
     end
 
     private
@@ -340,13 +344,13 @@ module Ancestry
     # works with after save context (hence before_last_save)
     def unscoped_current_and_previous_ancestors
       unscoped_where do |scope|
-        scope.where(scope.primary_key => (ancestor_ids + ancestor_ids_before_last_save).uniq)
+        scope.where(scope.ancestry_target_column => (ancestor_ids + ancestor_ids_before_last_save).uniq)
       end
     end
 
-    def unscoped_find(id)
+    def unscoped_find(ancestry_target_column_key)
       unscoped_where do |scope|
-        scope.find(id)
+        scope.find_by(self.class.ancestry_target_column => ancestry_target_column_key)
       end
     end
 

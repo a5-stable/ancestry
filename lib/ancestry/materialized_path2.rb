@@ -68,7 +68,7 @@ module Ancestry
       def child_ancestry
         raise(Ancestry::AncestryException, I18n.t("ancestry.no_child_for_new_record")) if new_record?
 
-        "#{attribute_in_database(self.class.ancestry_column)}#{id}#{self.class.ancestry_delimiter}"
+        "#{attribute_in_database(self.class.ancestry_column)}#{read_attribute(self.class.ancestry_target_column)}#{self.class.ancestry_delimiter}"
       end
 
       # Please see notes for MaterializedPath#child_ancestry_before_last_save
@@ -77,7 +77,7 @@ module Ancestry
           raise(Ancestry::AncestryException, I18n.t("ancestry.no_child_for_new_record"))
         end
 
-        "#{attribute_before_last_save(self.class.ancestry_column)}#{id}#{self.class.ancestry_delimiter}"
+        "#{attribute_before_last_save(self.class.ancestry_column)}#{read_attribute(self.class.ancestry_target_column)}#{self.class.ancestry_delimiter}"
       end
     end
   end
